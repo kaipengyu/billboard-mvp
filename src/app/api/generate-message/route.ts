@@ -289,7 +289,7 @@ CRITICAL: Output ONLY the message text - do NOT include any labels like "Locatio
         if (result?.flagged) {
           // Find which categories were flagged
           const flaggedCategories = Object.entries(result.categories || {})
-            .filter(([_, flagged]) => flagged)
+            .filter(([, flagged]) => flagged)
             .map(([category]) => category);
           
           return {

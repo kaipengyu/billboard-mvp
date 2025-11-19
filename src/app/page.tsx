@@ -182,7 +182,12 @@ export default function Home() {
     const locationParam = urlParams.get('location');
     
     let fetchUrl = "/api/generate-message";
-    let requestBody: any = {
+    let requestBody: {
+      audience: string;
+      latitude?: number;
+      longitude?: number;
+      locationName?: string;
+    } = {
       audience: audienceOverride || selectedPersona
     };
     
@@ -392,6 +397,7 @@ export default function Home() {
         clearInterval(intervalRef.current);
       }
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (
@@ -579,7 +585,7 @@ export default function Home() {
                     </div>
                     <div className={styles.popupSection}>
                       <h3>Example Message</h3>
-                      <p className={styles.popupExample}>"{persona.example}"</p>
+                      <p className={styles.popupExample}>&quot;{persona.example}&quot;</p>
                     </div>
                     <div className={styles.popupSection}>
                       <h3>Energy Tips</h3>
