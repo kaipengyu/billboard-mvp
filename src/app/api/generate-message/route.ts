@@ -165,12 +165,12 @@ The message should be:
 - 1–2 sentences total
 - AT MOST 35 WORDS (this is a hard limit - count your words carefully)
 - Written in ${persona.name}'s voice and tone (${persona.tone})
-- CRITICAL: When addressing the audience directly, use ${persona.name.split(' ')[0]} (the first name only), NOT any other name
+- CRITICAL: DO NOT include the persona name "${persona.name}" or "${persona.name.split(' ')[0]}" anywhere in the message text itself. The message should be written IN their voice and tone, but should NOT mention their name.
 - Clever, conversational, and human
 - Primarily focused on ${location}, using current conditions to inform what you say about it
 - Lightly persuasive, ending on a relatable energy-savings note
 - DO NOT use any M-dashes (—) in the message
-- Must feel like it's speaking directly to ${persona.name} in their preferred communication style
+- Must feel like it's speaking directly to the audience in ${persona.name}'s preferred communication style (but without mentioning their name)
 - Should feel timely and relevant because it's about ${location} informed by current conditions, but don't literally state time/temperature
 
 Tone (MUST MATCH ${persona.name.toUpperCase()}):
@@ -206,6 +206,7 @@ You must output ONLY the message text itself - nothing else. Do NOT include "Loc
 
 The message should be PRIMARILY ABOUT ${location}. Use weather and time context to inform what you say about ${location}, but DO NOT explicitly state the time or temperature. Write in ${persona.name}'s tone (${persona.tone}) and naturally transition to mention ${energyTipText}.
 CRITICAL: When referring to the location in the message, use ONLY the city name (e.g., "Baltimore", "In Baltimore", "around Baltimore") - NEVER use "City, State" format like "Baltimore, Maryland". Write like a real person talking, not a formal document.
+CRITICAL: DO NOT include the persona name "${persona.name}" or "${persona.name.split(' ')[0]}" anywhere in the message text. Write in their voice and tone, but do not mention their name.
 CRITICAL: Output ONLY the message text - do NOT include any labels like "Location:" or "Message:" in your response. Just the message itself.`;
 
     const aiRes = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -340,7 +341,7 @@ CRITICAL: Output ONLY the message text - do NOT include any labels like "Locatio
       const moderationCheck = await checkModeration(message);
       if (moderationCheck.flagged) {
         attempts++;
-        const retryPrompt = prompt + `\n\nIMPORTANT: The previous response was ${moderationCheck.reason}. This is attempt ${attempts} of ${maxAttempts}. Generate a completely different message that passes content moderation and is AT MOST 35 WORDS. CRITICAL: The message must be PRIMARILY ABOUT ${location}. Use weather and time context to inform what you say about ${location}, but DO NOT explicitly state the time or temperature. When referring to the location, use ONLY the city name (e.g., "Baltimore", "In Baltimore") - NEVER "City, State" format. When addressing the audience directly, use ${persona.name.split(' ')[0]} (the first name only), NOT any other name. Remember: The message MUST be written in ${persona.name}'s tone (${persona.tone}) and should reference ${energyTipText} naturally.`;
+        const retryPrompt = prompt + `\n\nIMPORTANT: The previous response was ${moderationCheck.reason}. This is attempt ${attempts} of ${maxAttempts}. Generate a completely different message that passes content moderation and is AT MOST 35 WORDS. CRITICAL: The message must be PRIMARILY ABOUT ${location}. Use weather and time context to inform what you say about ${location}, but DO NOT explicitly state the time or temperature. When referring to the location, use ONLY the city name (e.g., "Baltimore", "In Baltimore") - NEVER "City, State" format. CRITICAL: DO NOT include the persona name "${persona.name}" or "${persona.name.split(' ')[0]}" anywhere in the message text. Write in ${persona.name}'s tone (${persona.tone}) but do not mention their name. Remember: The message MUST be written in ${persona.name}'s tone (${persona.tone}) and should reference ${energyTipText} naturally.`;
         
         const retryRes = await fetch('https://api.openai.com/v1/chat/completions', {
           method: 'POST',
@@ -370,7 +371,7 @@ CRITICAL: Output ONLY the message text - do NOT include any labels like "Locatio
       // Step 2: Check for sensitive words
       if (checkForSensitiveWords(message)) {
         attempts++;
-        const retryPrompt = prompt + `\n\nIMPORTANT: The previous response contained sensitive content. This is attempt ${attempts} of ${maxAttempts}. Generate a completely different message that avoids any sensitive topics and is AT MOST 35 WORDS. CRITICAL: The message must be PRIMARILY ABOUT ${location}. Use weather and time context to inform what you say about ${location}, but DO NOT explicitly state the time or temperature. When referring to the location, use ONLY the city name (e.g., "Baltimore", "In Baltimore") - NEVER "City, State" format. When addressing the audience directly, use ${persona.name.split(' ')[0]} (the first name only), NOT any other name. Remember: The message MUST be written in ${persona.name}'s tone (${persona.tone}) and should reference ${energyTipText} naturally.`;
+        const retryPrompt = prompt + `\n\nIMPORTANT: The previous response contained sensitive content. This is attempt ${attempts} of ${maxAttempts}. Generate a completely different message that avoids any sensitive topics and is AT MOST 35 WORDS. CRITICAL: The message must be PRIMARILY ABOUT ${location}. Use weather and time context to inform what you say about ${location}, but DO NOT explicitly state the time or temperature. When referring to the location, use ONLY the city name (e.g., "Baltimore", "In Baltimore") - NEVER "City, State" format. CRITICAL: DO NOT include the persona name "${persona.name}" or "${persona.name.split(' ')[0]}" anywhere in the message text. Write in ${persona.name}'s tone (${persona.tone}) but do not mention their name. Remember: The message MUST be written in ${persona.name}'s tone (${persona.tone}) and should reference ${energyTipText} naturally.`;
         
         const retryRes = await fetch('https://api.openai.com/v1/chat/completions', {
           method: 'POST',
@@ -400,7 +401,7 @@ CRITICAL: Output ONLY the message text - do NOT include any labels like "Locatio
       // Step 3: Check format (word count)
       if (countWords(message) > 35) {
         attempts++;
-        const retryPrompt = prompt + `\n\nIMPORTANT: The previous response exceeded 35 words (had ${countWords(message)} words). This is attempt ${attempts} of ${maxAttempts}. Generate a completely different message that is AT MOST 35 WORDS. CRITICAL: The message must be PRIMARILY ABOUT ${location}. Use weather and time context to inform what you say about ${location}, but DO NOT explicitly state the time or temperature. When referring to the location, use ONLY the city name (e.g., "Baltimore", "In Baltimore") - NEVER "City, State" format. When addressing the audience directly, use ${persona.name.split(' ')[0]} (the first name only), NOT any other name. Remember: The message MUST be written in ${persona.name}'s tone (${persona.tone}) and should reference ${energyTipText} naturally.`;
+        const retryPrompt = prompt + `\n\nIMPORTANT: The previous response exceeded 35 words (had ${countWords(message)} words). This is attempt ${attempts} of ${maxAttempts}. Generate a completely different message that is AT MOST 35 WORDS. CRITICAL: The message must be PRIMARILY ABOUT ${location}. Use weather and time context to inform what you say about ${location}, but DO NOT explicitly state the time or temperature. When referring to the location, use ONLY the city name (e.g., "Baltimore", "In Baltimore") - NEVER "City, State" format. CRITICAL: DO NOT include the persona name "${persona.name}" or "${persona.name.split(' ')[0]}" anywhere in the message text. Write in ${persona.name}'s tone (${persona.tone}) but do not mention their name. Remember: The message MUST be written in ${persona.name}'s tone (${persona.tone}) and should reference ${energyTipText} naturally.`;
         
         const retryRes = await fetch('https://api.openai.com/v1/chat/completions', {
           method: 'POST',
