@@ -69,13 +69,13 @@ export async function POST(req: NextRequest) {
       hour12: true 
     });
 
-    // Persona definitions with tone and energy tip preferences
+    // Persona definitions with tone and default energy tip (used when location doesn't override)
     const personaConfig: Record<string, { 
       name: string; 
       tone: string; 
       regionalStyle: string; 
       example: string;
-      energyTips: string[];
+      energyTip: string; // Persona default: Pat=Home Energy Savings, Ernie=Energy Assessment, Aaliyah/Sam=Home Performance
       type: 'residential' | 'commercial';
     }> = {
       pat: {
@@ -83,7 +83,7 @@ export async function POST(req: NextRequest) {
         tone: 'warm, steady, practical, motherly, no hype',
         regionalStyle: 'polite Midwestern warmth, modest phrasing',
         example: 'Winters get rough out here, so anything that keeps the house steady is worth considering.',
-        energyTips: ['Home Performance'],
+        energyTip: 'Home Energy Savings',
         type: 'residential'
       },
       ernie: {
@@ -91,7 +91,7 @@ export async function POST(req: NextRequest) {
         tone: 'direct, concise, practical, cost-focused',
         regionalStyle: 'older-Philly straightforwardness, short and plain phrasing',
         example: 'If it cuts the bill a little, that\'s all I need to hear.',
-        energyTips: ['Quick Energy Check-up', 'Home Performance'],
+        energyTip: 'Energy Assessment',
         type: 'residential'
       },
       aaliyah: {
@@ -99,7 +99,7 @@ export async function POST(req: NextRequest) {
         tone: 'modern, friendly, lightly energetic, approachable',
         regionalStyle: 'urban Baltimore vibe, casual but clear, youthful phrasing',
         example: 'With the weather jumping around here, little energy saves can really make things easier day to day.',
-        energyTips: ['Quick Energy Check-up', 'Home Performance'],
+        energyTip: 'Home Performance',
         type: 'residential'
       },
       sam: {
@@ -107,17 +107,23 @@ export async function POST(req: NextRequest) {
         tone: 'steady, practical, ROI-focused, businesslike but friendly',
         regionalStyle: 'balanced suburban Maryland tone, measured phrasing',
         example: 'Keeping things running efficiently is one of the easiest ways to avoid surprise expenses.',
-        energyTips: ['Building Tune up'],
+        energyTip: 'Home Performance',
         type: 'commercial'
       }
     };
 
+    // Location overrides for Energy Tips: Chicago=Home Energy Savings, Philadelphia/Philly=Energy Assessment, Baltimore/DC-Maryland-Northern Virginia=Home Performance
+    const getEnergyTipForLocation = (loc: string | undefined): string | null => {
+      const l = (loc || '').toLowerCase();
+      if (l.includes('chicago')) return 'Home Energy Savings';
+      if (l.includes('philadelphia') || l.includes('philly')) return 'Energy Assessment';
+      if (l.includes('baltimore') || l.includes('maryland') || l.includes('northern virginia') || l.includes('dmv') || l.includes('dc') || (l.includes('washington') && !l.includes('state'))) return 'Home Performance';
+      return null;
+    };
+
     const persona = personaConfig[audience] || personaConfig.pat;
-    let energyTips = persona.energyTips;
-    if (location?.toLowerCase().includes('chicago')) {
-      energyTips = energyTips.filter(tip => tip !== 'Quick Energy Check-up');
-    }
-    const energyTipText = energyTips.length > 0 ? energyTips.join(' or ') : persona.energyTips.join(' or ');
+    const locationBasedTip = getEnergyTipForLocation(location);
+    const energyTipText = (locationBasedTip ?? persona.energyTip) + ' Program';
 
     // Helper function to count words
     const countWords = (text: string): number => {
@@ -152,7 +158,7 @@ AUDIENCE-SPECIFIC REQUIREMENTS:
 - Regional Style: ${persona.regionalStyle}
 - Example of appropriate tone: "${persona.example}"
 - The message should feel like it's being spoken directly to ${persona.name}, matching their communication preferences
-- For energy tips, focus on: ${energyTipText}
+- You MUST include the exact program name "${energyTipText}" in the message (e.g., "check out Home Energy Savings Program", "explore Energy Assessment Program"). Do NOT use generic phrases like "energy-efficient updates" or "energy savings" without naming the program "${energyTipText}".
 - ${persona.type === 'commercial' ? 'Keep the message business-focused and ROI-oriented, but still friendly.' : 'Keep the message home-focused and practical, emphasizing comfort and savings.'}
 
 IMPORTANT MESSAGE STRUCTURE:
@@ -190,7 +196,7 @@ If humor risks sounding dark, insensitive, or sarcastic about serious subjects, 
 Style:
 The message should be ABOUT ${location} first and foremost. Use weather and time context to inform what you say about ${location}.
 For example: "In ${location}, [location-specific observation informed by current weather/time]..." or "${location} [location characteristic] when [condition-informed context]..."
-Then pivot naturally into mentioning ${energyTipText} or related energy efficiency benefits using tone, pacing, or logic — not a pun.
+Then pivot naturally into naming the program "${energyTipText}" (use the exact phrase "${energyTipText}" in the message, e.g., "consider Home Energy Savings Program" or "look into Energy Assessment Program") — not a pun, and not a generic phrase instead of the program name.
 Keep it short and human: 1–2 sentences max.
 The line should sound natural if read aloud, like something overheard on a local radio segment or between neighbors.
 CRITICAL: The entire message must be written as if speaking directly to ${persona.name} in their preferred tone, and must be primarily about ${location}.
@@ -208,7 +214,7 @@ Current context (use these to FORM your message about ${location}, but don't exp
 Output format:
 You must output ONLY the message text itself - nothing else. Do NOT include "Location:" or "Message:" labels. Just output the actual message text.
 
-The message should be PRIMARILY ABOUT ${location}. Use weather and time context to inform what you say about ${location}, but DO NOT explicitly state the time or temperature. Write in ${persona.name}'s tone (${persona.tone}) and naturally transition to mention ${energyTipText}.
+The message should be PRIMARILY ABOUT ${location}. Use weather and time context to inform what you say about ${location}, but DO NOT explicitly state the time or temperature. Write in ${persona.name}'s tone (${persona.tone}) and naturally name the program "${energyTipText}" in the message (readers must see the exact program name, e.g., "Home Energy Savings Program", "Energy Assessment Program", or "Home Performance Program").
 CRITICAL: When referring to the location in the message, use ONLY the city name (e.g., "Baltimore", "In Baltimore", "around Baltimore") - NEVER use "City, State" format like "Baltimore, Maryland". Write like a real person talking, not a formal document.
 CRITICAL: DO NOT include the persona name "${persona.name}" or "${persona.name.split(' ')[0]}" anywhere in the message text. Write in their voice and tone, but do not mention their name.
 CRITICAL: Output ONLY the message text - do NOT include any labels like "Location:" or "Message:" in your response. Just the message itself.`;
@@ -345,7 +351,7 @@ CRITICAL: Output ONLY the message text - do NOT include any labels like "Locatio
       const moderationCheck = await checkModeration(message);
       if (moderationCheck.flagged) {
         attempts++;
-        const retryPrompt = prompt + `\n\nIMPORTANT: The previous response was ${moderationCheck.reason}. This is attempt ${attempts} of ${maxAttempts}. Generate a completely different message that passes content moderation and is AT MOST 35 WORDS. CRITICAL: The message must be PRIMARILY ABOUT ${location}. Use weather and time context to inform what you say about ${location}, but DO NOT explicitly state the time or temperature. When referring to the location, use ONLY the city name (e.g., "Baltimore", "In Baltimore") - NEVER "City, State" format. CRITICAL: DO NOT include the persona name "${persona.name}" or "${persona.name.split(' ')[0]}" anywhere in the message text. Write in ${persona.name}'s tone (${persona.tone}) but do not mention their name. Remember: The message MUST be written in ${persona.name}'s tone (${persona.tone}) and should reference ${energyTipText} naturally.`;
+        const retryPrompt = prompt + `\n\nIMPORTANT: The previous response was ${moderationCheck.reason}. This is attempt ${attempts} of ${maxAttempts}. Generate a completely different message that passes content moderation and is AT MOST 35 WORDS. CRITICAL: The message must be PRIMARILY ABOUT ${location}. Use weather and time context to inform what you say about ${location}, but DO NOT explicitly state the time or temperature. When referring to the location, use ONLY the city name (e.g., "Baltimore", "In Baltimore") - NEVER "City, State" format. CRITICAL: DO NOT include the persona name "${persona.name}" or "${persona.name.split(' ')[0]}" anywhere in the message text. Write in ${persona.name}'s tone (${persona.tone}) but do not mention their name. Remember: The message MUST be written in ${persona.name}'s tone (${persona.tone}) and must include the exact program name "${energyTipText}" in the message.`;
         
         const retryRes = await fetch('https://api.openai.com/v1/chat/completions', {
           method: 'POST',
@@ -375,7 +381,7 @@ CRITICAL: Output ONLY the message text - do NOT include any labels like "Locatio
       // Step 2: Check for sensitive words
       if (checkForSensitiveWords(message)) {
         attempts++;
-        const retryPrompt = prompt + `\n\nIMPORTANT: The previous response contained sensitive content. This is attempt ${attempts} of ${maxAttempts}. Generate a completely different message that avoids any sensitive topics and is AT MOST 35 WORDS. CRITICAL: The message must be PRIMARILY ABOUT ${location}. Use weather and time context to inform what you say about ${location}, but DO NOT explicitly state the time or temperature. When referring to the location, use ONLY the city name (e.g., "Baltimore", "In Baltimore") - NEVER "City, State" format. CRITICAL: DO NOT include the persona name "${persona.name}" or "${persona.name.split(' ')[0]}" anywhere in the message text. Write in ${persona.name}'s tone (${persona.tone}) but do not mention their name. Remember: The message MUST be written in ${persona.name}'s tone (${persona.tone}) and should reference ${energyTipText} naturally.`;
+        const retryPrompt = prompt + `\n\nIMPORTANT: The previous response contained sensitive content. This is attempt ${attempts} of ${maxAttempts}. Generate a completely different message that avoids any sensitive topics and is AT MOST 35 WORDS. CRITICAL: The message must be PRIMARILY ABOUT ${location}. Use weather and time context to inform what you say about ${location}, but DO NOT explicitly state the time or temperature. When referring to the location, use ONLY the city name (e.g., "Baltimore", "In Baltimore") - NEVER "City, State" format. CRITICAL: DO NOT include the persona name "${persona.name}" or "${persona.name.split(' ')[0]}" anywhere in the message text. Write in ${persona.name}'s tone (${persona.tone}) but do not mention their name. Remember: The message MUST be written in ${persona.name}'s tone (${persona.tone}) and must include the exact program name "${energyTipText}" in the message.`;
         
         const retryRes = await fetch('https://api.openai.com/v1/chat/completions', {
           method: 'POST',
@@ -405,7 +411,7 @@ CRITICAL: Output ONLY the message text - do NOT include any labels like "Locatio
       // Step 3: Check format (word count)
       if (countWords(message) > 35) {
         attempts++;
-        const retryPrompt = prompt + `\n\nIMPORTANT: The previous response exceeded 35 words (had ${countWords(message)} words). This is attempt ${attempts} of ${maxAttempts}. Generate a completely different message that is AT MOST 35 WORDS. CRITICAL: The message must be PRIMARILY ABOUT ${location}. Use weather and time context to inform what you say about ${location}, but DO NOT explicitly state the time or temperature. When referring to the location, use ONLY the city name (e.g., "Baltimore", "In Baltimore") - NEVER "City, State" format. CRITICAL: DO NOT include the persona name "${persona.name}" or "${persona.name.split(' ')[0]}" anywhere in the message text. Write in ${persona.name}'s tone (${persona.tone}) but do not mention their name. Remember: The message MUST be written in ${persona.name}'s tone (${persona.tone}) and should reference ${energyTipText} naturally.`;
+        const retryPrompt = prompt + `\n\nIMPORTANT: The previous response exceeded 35 words (had ${countWords(message)} words). This is attempt ${attempts} of ${maxAttempts}. Generate a completely different message that is AT MOST 35 WORDS. CRITICAL: The message must be PRIMARILY ABOUT ${location}. Use weather and time context to inform what you say about ${location}, but DO NOT explicitly state the time or temperature. When referring to the location, use ONLY the city name (e.g., "Baltimore", "In Baltimore") - NEVER "City, State" format. CRITICAL: DO NOT include the persona name "${persona.name}" or "${persona.name.split(' ')[0]}" anywhere in the message text. Write in ${persona.name}'s tone (${persona.tone}) but do not mention their name. Remember: The message MUST be written in ${persona.name}'s tone (${persona.tone}) and must include the exact program name "${energyTipText}" in the message.`;
         
         const retryRes = await fetch('https://api.openai.com/v1/chat/completions', {
           method: 'POST',
