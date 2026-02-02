@@ -34,7 +34,7 @@ export default function Home() {
       tone: "warm, steady, practical, motherly, no hype",
       regionalStyle: "polite Midwestern warmth, modest phrasing",
       example: "Winters get rough out here, so anything that keeps the house steady is worth considering.",
-      energyTips: ["Quick Energy Check-up", "Home Performance"]
+      energyTips: ["Home Performance"]
     },
     { 
       id: "ernie", 

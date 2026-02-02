@@ -83,7 +83,7 @@ export async function POST(req: NextRequest) {
         tone: 'warm, steady, practical, motherly, no hype',
         regionalStyle: 'polite Midwestern warmth, modest phrasing',
         example: 'Winters get rough out here, so anything that keeps the house steady is worth considering.',
-        energyTips: ['Quick Energy Check-up', 'Home Performance'],
+        energyTips: ['Home Performance'],
         type: 'residential'
       },
       ernie: {
@@ -113,7 +113,11 @@ export async function POST(req: NextRequest) {
     };
 
     const persona = personaConfig[audience] || personaConfig.pat;
-    const energyTipText = persona.energyTips.join(' or ');
+    let energyTips = persona.energyTips;
+    if (location?.toLowerCase().includes('chicago')) {
+      energyTips = energyTips.filter(tip => tip !== 'Quick Energy Check-up');
+    }
+    const energyTipText = energyTips.length > 0 ? energyTips.join(' or ') : persona.energyTips.join(' or ');
 
     // Helper function to count words
     const countWords = (text: string): number => {
