@@ -157,6 +157,21 @@
     }
 
     .billboard { position: relative; z-index: 1; }
+
+    /* ── Refresh button ──────────────────────────────────── */
+    .refresh-btn {
+      background: transparent;
+      border: 1px solid rgba(168, 85, 247, 0.5);
+      color: var(--accent-hi);
+      font-size: 12px;
+      padding: 5px 12px;
+      border-radius: 20px;
+      cursor: pointer;
+      letter-spacing: 0.04em;
+      transition: background 0.2s, border-color 0.2s;
+    }
+    .refresh-btn:hover { background: rgba(124, 58, 237, 0.25); border-color: var(--accent-hi); }
+    .refresh-btn:disabled { opacity: 0.4; cursor: not-allowed; }
   </style>
 </head>
 <body>
@@ -167,6 +182,7 @@
   <div class="top-bar">
     <div class="status-dot" id="statusDot"></div>
     <span class="countdown" id="countdown"></span>
+    <button class="refresh-btn" id="refreshBtn" onclick="manualRefresh()">&#8635; New Message</button>
   </div>
 
   <!-- Message stage -->
@@ -301,13 +317,13 @@
   }
 
   // ── RSS parse ─────────────────────────────────────────────
+  // Uses regex rather than DOMParser so unescaped & in URLs don't break parsing.
 
-  function parseRSS(xml) {
-    const doc = new DOMParser().parseFromString(xml, 'application/xml');
-    if (doc.querySelector('parsererror')) throw new Error('Invalid RSS from server.');
-    const desc = doc.querySelector('item > description');
-    if (!desc) throw new Error('No message item in feed.');
-    return desc.textContent.trim();
+  function parseRSS(text) {
+    // Match the CDATA block inside <item>'s <description>
+    const m = text.match(/<item[\s\S]*?<description>\s*<!\[CDATA\[([\s\S]*?)\]\]>/);
+    if (m && m[1].trim()) return m[1].trim();
+    throw new Error('No message found in feed.');
   }
 
   // ── Feed fetch ────────────────────────────────────────────
@@ -315,7 +331,8 @@
   // Falls back to a CORS proxy for static/local file serving in the meantime.
 
   async function fetchFeed(lat, lng) {
-    const url = `${FEED_URL}?lat=${lat}&lng=${lng}`;
+    // &t= busts the Vercel CDN cache so every call returns a fresh message
+    const url = `${FEED_URL}?lat=${lat}&lng=${lng}&t=${Date.now()}`;
 
     // 1. Direct fetch
     try {
@@ -324,7 +341,7 @@
     } catch (_) { /* CORS blocked — try proxy */ }
 
     // 2. CORS proxy fallback
-    const proxy = 'https://corsproxy.io/?url=' + encodeURIComponent(url);
+    const proxy = 'https://corsproxy.io/?' + encodeURIComponent(url);
     const res = await timedFetch(proxy, { cache: 'no-store' }, FETCH_MS);
     if (!res.ok) throw new Error(`Server returned ${res.status}`);
     return parseRSS(await res.text());
@@ -350,17 +367,23 @@
   }
 
   // ── Main refresh cycle ───────────────────────────────────
+  // skipGeo=true reuses cached coords (used by the manual button so the
+  // browser doesn't prompt for location permission again).
 
-  async function refresh() {
+  async function refresh(skipGeo = false) {
     setDot('loading');
 
     // ── Step 1: Geolocation ──────────────────────────────
-    showLoading('Detecting location…');
+    if (!skipGeo) showLoading('Detecting location…');
     let coords;
 
     try {
-      const pos = await getPosition();
-      coords = { latitude: pos.coords.latitude, longitude: pos.coords.longitude };
+      if (skipGeo && lastCoords) {
+        coords = lastCoords;
+      } else {
+        const pos = await getPosition();
+        coords = { latitude: pos.coords.latitude, longitude: pos.coords.longitude };
+      }
 
       // Update footer immediately with raw coords, then replace with city name async
       locationLbl.textContent =
@@ -413,6 +436,15 @@
     }
 
     startCountdown();
+  }
+
+  // ── Manual refresh ───────────────────────────────────────
+
+  function manualRefresh() {
+    const btn = document.getElementById('refreshBtn');
+    btn.disabled = true;
+    clearInterval(tickInterval);
+    refresh(true).finally(() => { btn.disabled = false; });
   }
 
   // ── Boot ─────────────────────────────────────────────────
