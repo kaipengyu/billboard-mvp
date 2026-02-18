@@ -197,6 +197,7 @@ export async function GET(req: NextRequest) {
         headers: {
           'Content-Type': 'application/rss+xml; charset=utf-8',
           'Cache-Control': 'public, max-age=60',
+          'Access-Control-Allow-Origin': '*',
         },
       });
     }
@@ -230,7 +231,8 @@ export async function GET(req: NextRequest) {
       status: 200,
       headers: {
         'Content-Type': 'application/rss+xml; charset=utf-8',
-        'Cache-Control': 'public, max-age=60', // Cache for 1 minute for more dynamic content
+        'Cache-Control': 'public, max-age=60',
+        'Access-Control-Allow-Origin': '*',
       },
     });
   } catch (error) {
