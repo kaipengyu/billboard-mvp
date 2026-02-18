@@ -14,7 +14,10 @@ export default function Home() {
   const [hasManualLocation, setHasManualLocation] = useState<boolean>(false);
   const [selectedPersona, setSelectedPersona] = useState<string>("pat");
   const [showPersonaPopup, setShowPersonaPopup] = useState<string | null>(null);
+  const [recentMessages, setRecentMessages] = useState<string[]>([]);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  const RECENT_MESSAGES_LIMIT = 5;
 
   // Preset locations
   const presetLocations = [
@@ -187,8 +190,10 @@ export default function Home() {
       latitude?: number;
       longitude?: number;
       locationName?: string;
+      recentMessages?: string[];
     } = {
-      audience: audienceOverride || selectedPersona
+      audience: audienceOverride || selectedPersona,
+      recentMessages: recentMessages.slice(0, RECENT_MESSAGES_LIMIT)
     };
     
     if (locationParam) {
@@ -225,7 +230,12 @@ export default function Home() {
       .then(async (res) => {
         const data = await res.json();
         if (res.ok) {
-          setMessage(data.message);
+          const newMessage = data.message;
+          setMessage(newMessage);
+          setRecentMessages((prev) => {
+            const next = [newMessage, ...prev].filter((m) => m && m.trim());
+            return next.slice(0, RECENT_MESSAGES_LIMIT);
+          });
         } else {
           setError(data.error || "Failed to generate message.");
         }

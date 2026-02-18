@@ -13,32 +13,42 @@ const predefinedLocations: Record<string, { latitude: number; longitude: number 
 
 export async function POST(req: NextRequest) {
   try {
+    // Parse request body (needed for recentMessages and possibly lat/lng)
+    let body: Record<string, unknown> = {};
+    try {
+      body = await req.json();
+    } catch {
+      body = {};
+    }
+
+    const recentMessages: string[] = Array.isArray(body.recentMessages)
+      ? (body.recentMessages as string[]).filter((m): m is string => typeof m === 'string').slice(0, 5)
+      : [];
+
     // Check for location parameter in URL
     const url = new URL(req.url);
     const locationParam = url.searchParams.get('location');
     const audienceParam = url.searchParams.get('audience');
-    
+
     let latitude: number;
     let longitude: number;
     let locationName: string | undefined;
-    
+
     let audience: string = 'pat'; // Default persona
-    
+
     if (locationParam && predefinedLocations[locationParam.toLowerCase()]) {
       // Use predefined location coordinates
       const coords = predefinedLocations[locationParam.toLowerCase()];
       latitude = coords.latitude;
       longitude = coords.longitude;
-      // Get audience from query parameter if provided
-      audience = audienceParam || 'pat';
+      audience = audienceParam || (body.audience as string) || 'pat';
     } else {
       // Use coordinates from request body
-      const body = await req.json();
-      latitude = body.latitude;
-      longitude = body.longitude;
-      locationName = body.locationName;
-      audience = body.audience || 'pat'; // Get audience from request body
-      
+      latitude = body.latitude as number;
+      longitude = body.longitude as number;
+      locationName = body.locationName as string | undefined;
+      audience = (body.audience as string) || 'pat';
+
       if (!latitude || !longitude) {
         return NextResponse.json({ error: 'Missing latitude or longitude' }, { status: 400 });
       }
@@ -142,6 +152,11 @@ export async function POST(req: NextRequest) {
 You are a creative copywriter for an energy utility campaign.
 Your job is to write short, witty, locally relevant messages using the input.
 The goal is to make the message feel human, surprising, and specific to that location — not like a template.
+${recentMessages.length > 0 ? `
+REPETITION GUARDRAIL (CRITICAL):
+The following messages were recently shown. You MUST NOT repeat, paraphrase, or closely resemble any of them. Generate something FRESH and distinctly different in content, phrasing, and angle:
+${recentMessages.map((m) => `- "${m}"`).join('\n')}
+` : ''}
 
 PRIMARY FOCUS: ${location}
 Target Audience: ${persona.name} (${persona.type === 'residential' ? 'Residential' : 'Commercial'})
