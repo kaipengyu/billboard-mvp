@@ -15,7 +15,7 @@ const personaConfig: Record<string, {
   pat: {
     name: 'Pat Gallagher',
     tone: 'warm, steady, practical, motherly, no hype',
-    regionalStyle: 'polite Midwestern warmth, modest phrasing',
+    regionalStyle: 'warm, understated phrasing, approachable and grounded',
     example: 'Winters get rough out here, so anything that keeps the house steady is worth considering.',
     energyTip: 'Home Energy Savings',
     type: 'residential',
@@ -23,7 +23,7 @@ const personaConfig: Record<string, {
   ernie: {
     name: 'Ernie Brown',
     tone: 'direct, concise, practical, cost-focused',
-    regionalStyle: 'older-Philly straightforwardness, short and plain phrasing',
+    regionalStyle: 'no-nonsense directness, short and plain phrasing',
     example: "If it cuts the bill a little, that's all I need to hear.",
     energyTip: 'Energy Assessment',
     type: 'residential',
@@ -31,7 +31,7 @@ const personaConfig: Record<string, {
   aaliyah: {
     name: 'Aaliyah Torres',
     tone: 'modern, friendly, lightly energetic, approachable',
-    regionalStyle: 'urban Baltimore vibe, casual but clear, youthful phrasing',
+    regionalStyle: 'casual but clear, youthful and energetic phrasing',
     example: 'With the weather jumping around here, little energy saves can really make things easier day to day.',
     energyTip: 'Home Performance',
     type: 'residential',
@@ -39,7 +39,7 @@ const personaConfig: Record<string, {
   sam: {
     name: 'Sam Osei',
     tone: 'steady, practical, ROI-focused, businesslike but friendly',
-    regionalStyle: 'balanced suburban Maryland tone, measured phrasing',
+    regionalStyle: 'balanced, professional tone, measured phrasing',
     example: 'Keeping things running efficiently is one of the easiest ways to avoid surprise expenses.',
     energyTip: 'Home Performance',
     type: 'commercial',
